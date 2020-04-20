@@ -317,14 +317,20 @@ static AFHTTPSessionManager *_sessionManager;
             progress ? progress(downloadProgress) : nil;
         });
     } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
-        //拼接缓存目录
-        NSString *downloadDir = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:fileDir ? fileDir : @"Download"];
-        //打开文件管理器
-        NSFileManager *fileManager = [NSFileManager defaultManager];
-        //创建Download目录
-        [fileManager createDirectoryAtPath:downloadDir withIntermediateDirectories:YES attributes:nil error:nil];
-        //拼接文件路径
-        NSString *filePath = [downloadDir stringByAppendingPathComponent:response.suggestedFilename];
+//        //拼接缓存目录
+//        NSString *downloadDir = [[NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject] stringByAppendingPathComponent:fileDir ? fileDir : @"Download"];
+//        //打开文件管理器
+//        NSFileManager *fileManager = [NSFileManager defaultManager];
+//        //创建Download目录
+//        [fileManager createDirectoryAtPath:downloadDir withIntermediateDirectories:YES attributes:nil error:nil];
+//        //拼接文件路径
+//        NSString *filePath = [downloadDir stringByAppendingPathComponent:response.suggestedFilename];
+//        //返回文件位置的URL路径
+//        return [NSURL fileURLWithPath:filePath];
+        
+        /* 下载路径 */
+        NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
+        NSString *filePath = [path stringByAppendingPathComponent:fileDir];
         //返回文件位置的URL路径
         return [NSURL fileURLWithPath:filePath];
         
