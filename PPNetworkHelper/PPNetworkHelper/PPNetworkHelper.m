@@ -159,7 +159,7 @@ static AFHTTPSessionManager *_sessionManager;
         [[self allSessionTask] removeObject:task];
         success ? success(responseObject) : nil;
         //对数据进行异步缓存
-        responseCache!=nil ? [PPNetworkCache setHttpCache:responseObject URL:URL parameters:parameters] : nil;
+//        responseCache!=nil ? [PPNetworkCache setHttpCache:responseObject URL:URL parameters:parameters] : nil;
         
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         
@@ -186,6 +186,46 @@ static AFHTTPSessionManager *_sessionManager;
     NSURLSessionTask *sessionTask = [_sessionManager POST:URL parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
         NSError *error = nil;
         [formData appendPartWithFileURL:[NSURL URLWithString:filePath] name:name error:&error];
+        (failure && error) ? failure(error) : nil;
+    } progress:^(NSProgress * _Nonnull uploadProgress) {
+        //上传进度
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            progress ? progress(uploadProgress) : nil;
+        });
+    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        
+        if (_isOpenLog) {PPLog(@"responseObject = %@",responseObject);}
+        [[self allSessionTask] removeObject:task];
+        success ? success(responseObject) : nil;
+        
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        
+        if (_isOpenLog) {PPLog(@"error = %@",error);}
+        [[self allSessionTask] removeObject:task];
+        failure ? failure(error) : nil;
+    }];
+    
+    // 添加sessionTask到数组
+    sessionTask ? [[self allSessionTask] addObject:sessionTask] : nil ;
+    
+    return sessionTask;
+}
+
++ (NSURLSessionTask *)uploadFileWithURL:(NSString *)URL
+                             parameters:(id)parameters
+                                   data:(NSData *)data
+                                   name:(NSString *)name
+                               fileName:(NSString *)fileName
+                               mimeType:(NSString *)mimeType
+                               progress:(PPHttpProgress)progress
+                                success:(PPHttpRequestSuccess)success
+                                failure:(PPHttpRequestFailed)failure {
+
+    NSURLSessionTask *sessionTask = [_sessionManager POST:URL parameters:parameters constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+        NSError *error = nil;
+        // 上传文件，以文件流的格式
+        [formData appendPartWithFileData:data name:name fileName:fileName mimeType:mimeType];
+//        [formData appendPartWithFileURL:[NSURL URLWithString:filePath] name:name error:&error];
         (failure && error) ? failure(error) : nil;
     } progress:^(NSProgress * _Nonnull uploadProgress) {
         //上传进度
