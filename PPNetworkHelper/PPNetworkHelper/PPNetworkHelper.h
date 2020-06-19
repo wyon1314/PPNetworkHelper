@@ -319,7 +319,7 @@ typedef void(^PPNetworkStatus)(PPNetworkStatusType status);
  */
 + (void)setSecurityPolicyWithCerPath:(NSString *)cerPath validatesDomainName:(BOOL)validatesDomainName;
 
-//设置默认模式 可抓包
+//设置默认模式 可抓包 适配https(无CA证书)
 + (void)setDefaultSecurityPolicy;
 
 @end

@@ -417,13 +417,14 @@ static AFHTTPSessionManager *_sessionManager;
     [_sessionManager setSecurityPolicy:securityPolicy];
 }
 
+//适配https(无CA证书)
 + (void)setDefaultSecurityPolicy {
     
-    //适配https(无CA证书)
     AFSecurityPolicy *securityPolicy = [AFSecurityPolicy defaultPolicy];
     securityPolicy.allowInvalidCertificates = YES;
     securityPolicy.validatesDomainName = NO;
-    manager.securityPolicy = securityPolicy;
+    
+    [_sessionManager setSecurityPolicy:securityPolicy];
     
 }
 
