@@ -405,19 +405,26 @@ static AFHTTPSessionManager *_sessionManager;
 }
 
 + (void)setSecurityPolicyWithCerPath:(NSString *)cerPath validatesDomainName:(BOOL)validatesDomainName {
+    NSData *cerData = [NSData dataWithContentsOfFile:cerPath];
     // 使用证书验证模式
-    AFSecurityPolicy *securityPolicy = validatesDomainName ? [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate] : [AFSecurityPolicy defaultPolicy];;
+    AFSecurityPolicy *securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate];
     // 如果需要验证自建证书(无效证书)，需要设置为YES
     securityPolicy.allowInvalidCertificates = YES;
     // 是否需要验证域名，默认为YES;
     securityPolicy.validatesDomainName = validatesDomainName;
-    
-    if (cerPath) {
-        NSData *cerData = [NSData dataWithContentsOfFile:cerPath];
-        securityPolicy.pinnedCertificates = [[NSSet alloc] initWithObjects:cerData, nil];
-    }
+    securityPolicy.pinnedCertificates = [[NSSet alloc] initWithObjects:cerData, nil];
     
     [_sessionManager setSecurityPolicy:securityPolicy];
+}
+
++ (void)setDefaultSecurityPolicy {
+    
+    //适配https(无CA证书)
+    AFSecurityPolicy *securityPolicy = [AFSecurityPolicy defaultPolicy];
+    securityPolicy.allowInvalidCertificates = YES;
+    securityPolicy.validatesDomainName = NO;
+    manager.securityPolicy = securityPolicy;
+    
 }
 
 @end
