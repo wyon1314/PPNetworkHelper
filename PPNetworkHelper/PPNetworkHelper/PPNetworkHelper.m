@@ -406,7 +406,7 @@ static AFHTTPSessionManager *_sessionManager;
 
 + (void)setSecurityPolicyWithCerPath:(NSString *)cerPath validatesDomainName:(BOOL)validatesDomainName {
     // 使用证书验证模式
-    AFSecurityPolicy *securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate];
+    AFSecurityPolicy *securityPolicy = validatesDomainName ? [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate] : [AFSecurityPolicy defaultPolicy];;
     // 如果需要验证自建证书(无效证书)，需要设置为YES
     securityPolicy.allowInvalidCertificates = YES;
     // 是否需要验证域名，默认为YES;
