@@ -16,8 +16,6 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/jkpang/PPNetworkHelper.git", :tag => s.version.to_s }
 
   s.source_files = "PPNetworkHelper/PPNetworkHelper/*.{h,m}"
-  
-  s.dependency 'AFNetworking', '~> 4.0.1'
 
   s.dependency 'YYCache', '~> 1.0.4'
 
