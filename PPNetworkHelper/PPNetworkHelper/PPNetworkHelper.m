@@ -19,6 +19,14 @@
 
 #define NSStringFormat(format,...) [NSString stringWithFormat:format,##__VA_ARGS__]
 
+@interface PPNetworkHelper ()
+
+@property (nonatomic,strong) NSString  *fileHistoryPath;
+/**  下载历史记录 */
+@property (nonatomic,strong) NSMutableDictionary *downLoadHistoryDictionary;
+
+@end
+
 @implementation PPNetworkHelper
 
 static BOOL _isOpenLog;   // 是否已开启日志打印
@@ -349,6 +357,65 @@ static AFHTTPSessionManager *_sessionManager;
     return downloadTask;
 }
 
++ (__kindof NSURLSessionTask *)downloadWithURL:(NSString *)URL
+                                      filePath:(NSString *)filePath
+                                      progress:(PPHttpProgress)progress
+                                       success:(void(^)(NSString *filePath))success
+                                       failure:(PPHttpRequestFailed)failure {
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
+    __block NSURLSessionDownloadTask   *downloadTask = nil;
+    NSData *downLoadHistoryData = [self.downLoadHistoryDictionary objectForKey:URL];
+    
+    if (downLoadHistoryData.length > 0 ) {
+        //断点下载
+        downloadTask = [_sessionManager downloadTaskWithResumeData:downLoadHistoryData progress:^(NSProgress * _Nonnull downloadProgress) {
+            //下载进度
+            dispatch_sync(dispatch_get_main_queue(), ^{
+                progress ? progress(downloadProgress) : nil;
+            });
+            
+        } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
+
+            //返回文件位置的URL路径
+            return [NSURL fileURLWithPath:filePath];
+            
+        } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
+            
+            [[self allSessionTask] removeObject:downloadTask];
+            if(failure && error) {failure(error) ; return ;};
+            success ? success(filePath.absoluteString /** NSURL->NSString*/) : nil;
+            
+        }];
+        
+    } else {
+        //新任务下载
+        downloadTask = [_sessionManager downloadTaskWithRequest:request progress:^(NSProgress * _Nonnull downloadProgress) {
+            //下载进度
+            dispatch_sync(dispatch_get_main_queue(), ^{
+                progress ? progress(downloadProgress) : nil;
+            });
+        } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
+            
+            //返回文件位置的URL路径
+            return [NSURL fileURLWithPath:filePath];
+            
+        } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
+            
+            [[self allSessionTask] removeObject:downloadTask];
+            if(failure && error) {failure(error) ; return ;};
+            success ? success(filePath.absoluteString /** NSURL->NSString*/) : nil;
+            
+        }];
+
+    }
+    //开始下载
+    [downloadTask resume];
+    // 添加sessionTask到数组
+    downloadTask ? [[self allSessionTask] addObject:downloadTask] : nil ;
+    return downloadTask;
+    
+}
 /**
  存储着所有的请求task数组
  */
@@ -376,6 +443,49 @@ static AFHTTPSessionManager *_sessionManager;
     _sessionManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/html", @"text/json", @"text/plain", @"text/javascript", @"text/xml", @"image/*", nil];
     // 打开状态栏的等待菊花
     [AFNetworkActivityIndicatorManager sharedManager].enabled = YES;
+ 
+    __weak typeof(self)weakSelf = self;
+    [_sessionManager setTaskDidCompleteBlock:^(NSURLSession * _Nonnull session, NSURLSessionTask * _Nonnull task, NSError * _Nullable error) {
+        
+        NSString *urlHost = [task.currentRequest.URL absoluteString];
+        if (error) {
+            NSData *resumeData = [error.userInfo objectForKey:@"NSURLSessionDownloadTaskResumeData"];
+            [weakSelf saveHistoryWithKey:urlHost DownloadTaskResumeData:resumeData];
+            //这个是因为 用户比如强退程序之后 ,再次进来的时候 存进去这个继续的data  需要用户去刷新列表
+        }else{
+            if ([weakSelf.downLoadHistoryDictionary valueForKey:urlHost]) {
+                [weakSelf.downLoadHistoryDictionary removeObjectForKey:urlHost];
+                [weakSelf saveDownLoadHistoryDirectory];
+            }
+        }
+
+    }];
+    
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+    NSString *path = [paths objectAtIndex:0];
+    self.fileHistoryPath = [path stringByAppendingPathComponent:@"fileDownLoadHistory.plist"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:self.fileHistoryPath]) {
+        self.downLoadHistoryDictionary =[NSMutableDictionary dictionaryWithContentsOfFile:self.fileHistoryPath];
+    }else{
+        self.downLoadHistoryDictionary =[NSMutableDictionary dictionary];
+        //将dictionary中的数据写入plist文件中
+        [self.downLoadHistoryDictionary writeToFile:self.fileHistoryPath atomically:YES];
+    }
+    
+}
+- (void)saveHistoryWithKey:(NSString *)key DownloadTaskResumeData:(NSData *)data{
+    if (!data) {
+        NSString *emptyData = [NSString stringWithFormat:@""];
+        [self.downLoadHistoryDictionary setObject:emptyData forKey:key];
+
+    }else{
+        [self.downLoadHistoryDictionary setObject:data forKey:key];
+    }
+    
+  [self.downLoadHistoryDictionary writeToFile:self.fileHistoryPath atomically:NO];
+}
+- (void)saveDownLoadHistoryDirectory{
+    [self.downLoadHistoryDictionary writeToFile:self.fileHistoryPath atomically:YES];
 }
 
 #pragma mark - 重置AFHTTPSessionManager相关属性
