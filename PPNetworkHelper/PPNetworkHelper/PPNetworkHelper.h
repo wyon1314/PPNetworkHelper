@@ -248,7 +248,7 @@ typedef void(^PPNetworkStatus)(PPNetworkStatusType status);
                                        success:(void(^)(NSString *filePath))success
                                        failure:(PPHttpRequestFailed)failure;
 + (__kindof NSURLSessionTask *)downloadWithURL:(NSString *)URL
-                                       fileName:(NSString *)fileName
+                                      filePath:(NSString *)filePath
                                       progress:(PPHttpProgress)progress
                                        success:(void(^)(NSString *filePath))success
                                        failure:(PPHttpRequestFailed)failure;
