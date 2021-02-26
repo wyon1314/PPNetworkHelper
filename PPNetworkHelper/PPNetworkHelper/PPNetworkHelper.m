@@ -378,9 +378,6 @@ static AFHTTPSessionManager *_sessionManager;
     [AFNetworkActivityIndicatorManager sharedManager].enabled = YES;
 }
 
-+ (AFHTTPSessionManager *)getAFHTTPSessionManager {
-    return _sessionManager;
-}
 #pragma mark - 重置AFHTTPSessionManager相关属性
 
 + (void)setAFHTTPSessionManagerProperty:(void (^)(AFHTTPSessionManager *))sessionManager {

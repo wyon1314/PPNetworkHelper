@@ -271,7 +271,6 @@ typedef void(^PPNetworkStatus)(PPNetworkStatusType status);
 
 #pragma mark - 设置AFHTTPSessionManager相关属性
 #pragma mark 注意: 因为全局只有一个AFHTTPSessionManager实例,所以以下设置方式全局生效
-+ (AFHTTPSessionManager *)getAFHTTPSessionManager;
 /**
  在开发中,如果以下的设置方式不满足项目的需求,就调用此方法获取AFHTTPSessionManager实例进行自定义设置
  (注意: 调用此方法时在要导入AFNetworking.h头文件,否则可能会报找不到AFHTTPSessionManager的❌)
