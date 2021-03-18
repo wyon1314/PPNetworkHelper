@@ -348,6 +348,38 @@ static AFHTTPSessionManager *_sessionManager;
     
     return downloadTask;
 }
++ (__kindof NSURLSessionTask *)downloadWithURL:(NSString *)URL
+                                      filePath:(NSString *)filePath
+                                      progress:(PPHttpProgress)progress
+                                       success:(void(^)(NSString *filePath))success
+                                       failure:(PPHttpRequestFailed)failure {
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
+    __block NSURLSessionDownloadTask *downloadTask = [_sessionManager downloadTaskWithRequest:request progress:^(NSProgress * _Nonnull downloadProgress) {
+        //下载进度
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            progress ? progress(downloadProgress) : nil;
+        });
+    } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
+
+        //返回文件位置的URL路径
+        return [NSURL fileURLWithPath:filePath];
+        
+    } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
+        
+        [[self allSessionTask] removeObject:downloadTask];
+        if(failure && error) {failure(error) ; return ;};
+        success ? success(filePath.absoluteString /** NSURL->NSString*/) : nil;
+        
+    }];
+    //开始下载
+    [downloadTask resume];
+    // 添加sessionTask到数组
+    downloadTask ? [[self allSessionTask] addObject:downloadTask] : nil ;
+    
+    return downloadTask;
+    
+}
 
 /**
  存储着所有的请求task数组
